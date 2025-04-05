@@ -13,6 +13,7 @@ import {
   Modal, 
   ActivityIndicator 
 } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import { MoreVertical } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -211,14 +212,20 @@ export default function ClientScreen({ navigation }) {
           style={styles.keyboardAvoidingView}
         >
           <View style={styles.formContainer}>
-            <Text style={styles.label}>Nombre de la planta*:</Text>
-            <TextInput 
-              style={styles.input} 
-              placeholder="Ej. Tomate" 
-              value={plantName} 
-              onChangeText={setPlantName} 
-              placeholderTextColor="#A7C4A0"
-            />
+            <Text style={styles.label}>Nombre de la planta:</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={plantName}
+                onValueChange={(itemValue) => setPlantName(itemValue)}
+                style={styles.picker}
+                dropdownIconColor="#8B7765"
+              >
+                <Picker.Item label="Seleccione una planta" value="" />
+                <Picker.Item label="Cedro limón" value="Cedro limón" />
+                <Picker.Item label="Ocote" value="Ocote" />
+                <Picker.Item label="Pino" value="Pino" />
+              </Picker>
+            </View>
             
             <Text style={styles.label}>Especie:</Text>
             <TextInput 
@@ -246,7 +253,7 @@ export default function ClientScreen({ navigation }) {
               {isLoading ? (
                 <ActivityIndicator color="white" />
               ) : (
-                <Text style={styles.buttonText}>Tomar Foto*</Text>
+                <Text style={styles.buttonText}>Tomar Foto</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -434,6 +441,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#8B7765',
     marginBottom: 8,
+  },
+  pickerContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 5,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    overflow: 'hidden',
+  },
+  picker: {
+    height: 50,
+    width: '100%',
+    color: '#4d4d4d',
   },
   input: {
     backgroundColor: '#FFFFFF',

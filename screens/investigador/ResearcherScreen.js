@@ -13,6 +13,7 @@ import {
   Modal, 
   ActivityIndicator 
 } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import { MoreVertical } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -211,14 +212,20 @@ export default function ResearcherScreen({ navigation }) {
           style={styles.keyboardAvoidingView}
         >
           <View style={styles.formContainer}>
-            <Text style={styles.label}>Nombre de la planta*:</Text>
-            <TextInput 
-              style={styles.input} 
-              placeholder="Ej. Tomate" 
-              value={plantName} 
-              onChangeText={setPlantName} 
-              placeholderTextColor="#A7C4A0"
-            />
+            <Text style={styles.label}>Nombre de la planta:</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={plantName}
+                onValueChange={(itemValue) => setPlantName(itemValue)}
+                style={styles.picker}
+                dropdownIconColor="#8B7765"
+              >
+                <Picker.Item label="Seleccione una planta" value="" />
+                <Picker.Item label="Cedro limón" value="Cedro limón" />
+                <Picker.Item label="Ocote" value="Ocote" />
+                <Picker.Item label="Pino" value="Pino" />
+              </Picker>
+            </View>
             
             <Text style={styles.label}>Especie:</Text>
             <TextInput 
@@ -246,7 +253,7 @@ export default function ResearcherScreen({ navigation }) {
               {isLoading ? (
                 <ActivityIndicator color="white" />
               ) : (
-                <Text style={styles.buttonText}>Tomar Foto*</Text>
+                <Text style={styles.buttonText}>Tomar Foto</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -381,11 +388,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     padding: 15,
-    backgroundColor: '#006400',
+    backgroundColor: '#9CA88F',
     paddingTop: Platform.OS === 'android' ? 40 : 15,
   },
   headerText: {
-    color: 'white',
+    color: '#FFFFF0',
     fontSize: 20,
     fontWeight: 'bold',
   },
@@ -398,7 +405,7 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
   menuContainer: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFF0',
     borderRadius: 5,
     padding: 10,
     minWidth: 150,
@@ -408,7 +415,7 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: 16,
-    color: '#006400',
+    color: '#8B7765',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -435,48 +442,61 @@ const styles = StyleSheet.create({
     color: '#8B7765',
     marginBottom: 8,
   },
+  pickerContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 5,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#EAE0C8',
+    overflow: 'hidden',
+  },
+  picker: {
+    height: 50,
+    width: '100%',
+    color: '#5A5A5A',
+  },
   input: {
     backgroundColor: '#FFFFFF',
     padding: 12,
     borderRadius: 5,
     fontSize: 16,
-    color: '#4d4d4d',
+    color: '#5A5A5A',
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#EAE0C8',
   },
   multilineInput: {
     minHeight: 80,
     textAlignVertical: 'top',
   },
   button: {
-    backgroundColor: '#228B22',
+    backgroundColor: '#A7C4A0',
     padding: 15,
     borderRadius: 5,
     alignItems: 'center',
     marginTop: 10,
   },
   detectButton: {
-    backgroundColor: '#006400',
+    backgroundColor: '#9CA88F',
     width: '90%',
     alignSelf: 'center',
     marginTop: 20,
   },
   saveButton: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#8B9D77',
     width: '90%',
     alignSelf: 'center',
     marginTop: 10,
     marginBottom: 20,
   },
   confirmButton: {
-    backgroundColor: '#8B0000',
+    backgroundColor: '#C7875D',
     width: '90%',
     alignSelf: 'center',
     marginTop: 10,
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: '#FFFFF0',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -487,14 +507,14 @@ const styles = StyleSheet.create({
   imageContainer: {
     width: '100%',
     height: 250,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#EAE0C8',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 20,
     borderRadius: 5,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#D4A76A',
     position: 'relative',
   },
   imageWrapper: {
@@ -529,13 +549,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   imagePlaceholder: {
-    color: '#666',
+    color: '#8B7765',
     fontSize: 16,
   },
   diseaseInfo: {
     width: '90%',
     padding: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFFFF0',
     borderRadius: 10,
     marginTop: 20,
     alignSelf: 'center',
@@ -548,12 +568,12 @@ const styles = StyleSheet.create({
   diseaseTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#228B22',
+    color: '#8B9D77',
     marginBottom: 8,
   },
   diseaseText: {
     fontSize: 16,
-    color: '#555',
+    color: '#5A5A5A',
     lineHeight: 22,
   },
 });
