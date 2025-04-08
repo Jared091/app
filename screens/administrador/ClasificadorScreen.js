@@ -18,7 +18,7 @@ const ClasificadorScreen = () => {
   const [predictedClass, setPredictedClass] = useState(null);
   const [showCorrectionModal, setShowCorrectionModal] = useState(false);
   const [selectedClass, setSelectedClass] = useState("");
-  const class_labels = ["Clase1", "Clase2", "Clase3"]; // Reemplaza con tus etiquetas reales
+  const class_labels = ["Cedro Limon", "Ocote", "Pino"]; // Reemplaza con tus etiquetas reales
 
   const handleClassification = useCallback(async () => {
     try {
