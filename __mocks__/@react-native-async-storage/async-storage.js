@@ -1,0 +1,2 @@
+// filepath: c:\Users\jhalo\OneDrive\Documents\utvt 4\front-end\__mocks__\@react-native-async-storage\async-storage.js
+export default from '@react-native-async-storage/async-storage/jest/async-storage-mock';

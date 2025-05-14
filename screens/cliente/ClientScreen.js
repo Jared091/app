@@ -19,14 +19,22 @@ import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../api/index.js';
 
-export default function ClientScreen({ navigation }) {
-  const [plantName, setPlantName] = useState('');
-  const [species, setSpecies] = useState('');
-  const [location, setLocation] = useState('');
-  const [imageUri, setImageUri] = useState(null);
-  const [disease, setDisease] = useState(null);
+export default function PantallaInvestigadorAdmin({ navigation }) {
+  // Estados principales
+  const [nombrePlanta, setNombrePlanta] = useState('');
+  const [especie, setEspecie] = useState('');
+  const [ubicacion, setUbicacion] = useState('');
+  const [imagenUri, setImagenUri] = useState(null);
+  const [resultado, setResultado] = useState(null);
+  const [cargando, setCargando] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  
+  // Estados para el flujo de diagnóstico
+  const [estadoPlanta, setEstadoPlanta] = useState(''); // 's' (sana) o 'e' (enferma)
+  const [mostrarModalCorreccion, setMostrarModalCorreccion] = useState(false);
+  const [claseSeleccionada, setClaseSeleccionada] = useState("");
+
+  // Estados para la selección de área afectada
   const [selection, setSelection] = useState({
     x: 0,
     y: 0,
@@ -36,150 +44,331 @@ export default function ClientScreen({ navigation }) {
   });
   const [showConfirmButton, setShowConfirmButton] = useState(false);
   const [imageLayout, setImageLayout] = useState({ width: 0, height: 0 });
+
+  // Datos fijos
+  const tiposPlantas = ["Cedro Limon", "Ocote", "Pino"];
   const scrollViewRef = useRef();
 
+  // Solicitar permisos de cámara
   useEffect(() => {
-    const requestPermissions = async () => {
+    (async () => {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permisos requeridos', 'Se necesitan permisos para acceder a la cámara.');
+        Alert.alert('Permisos requeridos', 'Se necesita acceso a la cámara para continuar');
       }
-    };
-    
-    requestPermissions();
-    
-    return () => {
-      setImageUri(null);
-      setDisease(null);
-    };
+    })();
   }, []);
 
-  const takePhoto = useCallback(async () => {
+  // Función para tomar foto con la cámara
+  const tomarFoto = async () => {
     try {
-      setIsLoading(true);
-      const result = await ImagePicker.launchCameraAsync({
+      setCargando(true);
+      const resultado = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
       });
 
-      if (!result.canceled && result.assets && result.assets[0]) {
-        setImageUri(result.assets[0].uri);
-        setDisease(null);
+      if (!resultado.canceled && resultado.assets?.[0]) {
+        const imagen = resultado.assets[0];
+        setImagenUri(imagen.uri);
+        setResultado(null);
         setSelection({ x: 0, y: 0, width: 0, height: 0, visible: false });
         setShowConfirmButton(false);
+        
+        // Si está sana, clasificar directamente
+        if (estadoPlanta === 's') {
+          await clasificarPlanta(imagen.uri);
+        }
       }
     } catch (error) {
-      console.error('Error al tomar foto:', error);
-      Alert.alert('Error', 'No se pudo tomar la foto. Por favor intente nuevamente.');
+      Alert.alert('Error', 'No se pudo tomar la foto: ' + error.message);
     } finally {
-      setIsLoading(false);
+      setCargando(false);
     }
-  }, []);
+  };
 
-  const detectDisease = useCallback(() => {
-    if (!imageUri) {
-      Alert.alert('Error', 'Primero debes tomar una foto.');
-      return;
+  // Función para clasificar la planta (sana)
+  const clasificarPlanta = async (uri) => {
+    try {
+      setCargando(true);
+      
+      const formData = new FormData();
+      formData.append("image", {
+        uri: uri,
+        type: "image/jpeg",
+        name: `clasificacion_${Date.now()}.jpg`,
+      });
+
+      const respuesta = await api.post("/classify-tree/", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (respuesta.data?.predicted_class && respuesta.data.confidence !== undefined) {
+        const confianza = Math.round(respuesta.data.confidence * 100);
+        setResultado({
+          tipo: 'planta',
+          nombre: respuesta.data.predicted_class,
+          confianza: confianza
+        });
+        
+        if (!nombrePlanta) {
+          setNombrePlanta(respuesta.data.predicted_class);
+        }
+      }
+    } catch (error) {
+      Alert.alert("Error", error.message || "Error al clasificar la planta");
+    } finally {
+      setCargando(false);
     }
+  };
 
+  // Función para analizar enfermedad
+  const analizarEnfermedad = async () => {
     if (!selection.visible) {
       Alert.alert('Error', 'Por favor selecciona el área afectada en la imagen.');
       return;
     }
 
-    setIsLoading(true);
-    setTimeout(() => {
-      setDisease({
-        name: 'Moho gris',
-        description: 'Infección fúngica que afecta las hojas y tallos.',
-        affectedArea: selection
-      });
-      setIsLoading(false);
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 1000);
-  }, [imageUri, selection]);
-
-  const handleLogout = async () => {
     try {
-      await AsyncStorage.multiRemove(['access_token', 'refresh_token', 'user_role', 'user_id']);
-      navigation.navigate('Login');
+      setCargando(true);
+      
+      const formData = new FormData();
+      formData.append("image", {
+        uri: imagenUri,
+        type: "image/jpeg",
+        name: `enfermedad_${Date.now()}.jpg`,
+      });
+      formData.append("area_afectada", JSON.stringify({
+        x: selection.x,
+        y: selection.y,
+        width: selection.width,
+        height: selection.height
+      }));
+
+      const respuesta = await api.post("/classify-disease/", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (respuesta.data?.predicted_class && respuesta.data.confidence !== undefined) {
+        const confianza = Math.round(respuesta.data.confidence * 100);
+        setResultado({
+          tipo: 'enfermedad',
+          nombre: respuesta.data.predicted_class,
+          confianza: confianza,
+          area: {
+            x: selection.x,
+            y: selection.y,
+            width: selection.width,
+            height: selection.height
+          }
+        });
+      }
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-      Alert.alert('Error', 'No se pudo cerrar sesión correctamente');
+      Alert.alert("Error", error.message || "Error al analizar la enfermedad");
+    } finally {
+      setCargando(false);
     }
   };
 
-  const savePlantData = async () => {
-    if (!plantName || !imageUri) {
-      Alert.alert('Error', 'Nombre e imagen son campos obligatorios');
+  // Función para guardar el diagnóstico
+  const guardarDiagnostico = async () => {
+    if (!nombrePlanta || !imagenUri) {
+      Alert.alert('Error', 'El nombre y la imagen son obligatorios');
       return;
     }
 
-    setIsLoading(true);
-    
     try {
+      setCargando(true);
       const [userId, token] = await Promise.all([
         AsyncStorage.getItem('user_id'),
         AsyncStorage.getItem('access_token')
       ]);
 
       if (!userId || !token) {
-        throw new Error('No se encontraron credenciales de usuario');
+        throw new Error('Debes iniciar sesión para continuar');
       }
 
-      const filename = imageUri.split('/').pop();
-      const extension = filename.split('.').pop() || 'jpg';
-      const uniqueFilename = `planta_${Date.now()}.${extension}`;
+      // Generar nombre de archivo con estructura: planta/estado/usuario/nombre_archivo
+      const plantaFolder = nombrePlanta.replace(/\s+/g, '_');
+      const estadoFolder = estadoPlanta === 's' ? 'sanas' : 'enfermas';
+      const userFolder = `user_${userId}`;
+      const extension = imagenUri.split('.').pop() || 'jpg';
+      const nombreArchivo = `${plantaFolder}_${Date.now()}.${extension}`;
+      
+      const filePath = `${plantaFolder}/${estadoFolder}/${userFolder}/${nombreArchivo}`;
 
       const formData = new FormData();
-      formData.append('Nombre', plantName.trim());
-      if (species) formData.append('Especie', species.trim());
-      if (location) formData.append('Ubicacion', location.trim());
+      formData.append('Nombre', nombrePlanta.trim());
+      formData.append('Especie', especie.trim());
+      formData.append('Ubicacion', ubicacion.trim());
       formData.append('usuario_id', userId);
+      formData.append('estado', estadoPlanta);
+      
+      if (resultado) {
+        formData.append('clasificacion', resultado.nombre);
+        if (estadoPlanta === 'e' && resultado.area) {
+          formData.append('area_afectada', JSON.stringify(resultado.area));
+        }
+      }
       
       formData.append('imagen', {
-        uri: imageUri,
-        name: uniqueFilename,
+        uri: imagenUri,
+        name: filePath,
         type: `image/${extension === 'jpg' ? 'jpeg' : extension}`,
       });
 
-      const response = await api.post('/plantas/', formData, {
+      const respuesta = await api.post('/plantas/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`,
         },
       });
 
-      if (response.data && response.data.message) {
-        Alert.alert('Éxito', response.data.message);
-        setPlantName('');
-        setSpecies('');
-        setLocation('');
-        setImageUri(null);
-        setSelection({ x: 0, y: 0, width: 0, height: 0, visible: false });
-      }
+      Alert.alert(
+        '✅ Registro exitoso', 
+        respuesta.data?.message || `Diagnóstico guardado correctamente`,
+        [
+          { 
+            text: "Aceptar", 
+            onPress: () => {
+              resetFormulario();
+              scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+            } 
+          }
+        ]
+      );
     } catch (error) {
-      console.error('Error:', {
-        message: error.message,
-        response: error.response?.data,
-      });
-      Alert.alert('Error', error.response?.data?.error || error.message || 'Error al guardar');
+      Alert.alert(
+        'Error', 
+        error.response?.data?.error || 
+        error.message || 
+        'No se pudo guardar el diagnóstico. Intente nuevamente.'
+      );
     } finally {
-      setIsLoading(false);
+      setCargando(false);
     }
   };
 
+  // Función para enviar corrección
+  const enviarCorreccion = async () => {
+    if (!claseSeleccionada) {
+      Alert.alert('Error', 'Debes seleccionar una clase válida');
+      return;
+    }
+
+    try {
+      setCargando(true);
+      const formData = new FormData();
+      formData.append("image", {
+        uri: imagenUri,
+        type: "image/jpeg",
+        name: `correccion_${Date.now()}.jpg`,
+      });
+      formData.append("true_class", claseSeleccionada);
+
+      const respuesta = await api.post("/train/", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      Alert.alert(
+        "✅ Corrección enviada", 
+        respuesta.data?.message || "La corrección fue registrada exitosamente",
+        [
+          { 
+            text: "OK", 
+            onPress: () => {
+              setMostrarModalCorreccion(false);
+              resetFormulario();
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      Alert.alert(
+        "Error", 
+        error.response?.data?.error || 
+        error.message || 
+        "No se pudo enviar la corrección"
+      );
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  // Función para resetear el formulario
+  const resetFormulario = () => {
+    setNombrePlanta('');
+    setEspecie('');
+    setUbicacion('');
+    setImagenUri(null);
+    setResultado(null);
+    setEstadoPlanta('');
+    setSelection({ x: 0, y: 0, width: 0, height: 0, visible: false });
+    setShowConfirmButton(false);
+    setClaseSeleccionada("");
+  };
+
+  // Función para cerrar sesión
+  const cerrarSesion = async () => {
+    try {
+      await AsyncStorage.multiRemove(['access_token', 'refresh_token', 'user_role', 'user_id']);
+      navigation.navigate('Login');
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo cerrar sesión: ' + error.message);
+    }
+  };
+
+  // Manejar el toque en la imagen para selección de área
+  const handleImageTouch = useCallback((e) => {
+    if (estadoPlanta !== 'e') return;
+
+    const { locationX, locationY } = e.nativeEvent;
+    setSelection({
+      x: locationX,
+      y: locationY,
+      width: 0,
+      height: 0,
+      visible: true
+    });
+    setShowConfirmButton(false);
+  }, [estadoPlanta]);
+
+  // Manejar el movimiento en la imagen para selección de área
+  const handleImageMove = useCallback((e) => {
+    if (estadoPlanta !== 'e' || !selection.visible) return;
+
+    const { locationX, locationY } = e.nativeEvent;
+    setSelection(prev => ({
+      ...prev,
+      width: Math.max(0, Math.min(locationX - prev.x, imageLayout.width - prev.x)),
+      height: Math.max(0, Math.min(locationY - prev.y, imageLayout.height - prev.y))
+    }));
+  }, [estadoPlanta, selection.visible, imageLayout]);
+
+  // Manejar la liberación del toque en la imagen
+  const handleImageRelease = useCallback(() => {
+    if (estadoPlanta !== 'e') return;
+
+    if (selection.width > 10 && selection.height > 10) {
+      setShowConfirmButton(true);
+    } else {
+      setSelection({ ...selection, visible: false });
+    }
+  }, [estadoPlanta, selection]);
+
   return (
     <View style={styles.container}>
+      {/* Header con título y menú */}
       <View style={styles.header}>
-        <Text style={styles.headerText}>Panel de Cliente</Text>
+        <Text style={styles.headerText}>Detección de Plantas</Text>
         <TouchableOpacity onPress={() => setMenuVisible(true)}>
           <MoreVertical size={24} color="white" />
         </TouchableOpacity>
       </View>
 
+      {/* Menú desplegable */}
       <Modal
         transparent={true}
         visible={menuVisible}
@@ -194,7 +383,7 @@ export default function ClientScreen({ navigation }) {
           <View style={styles.menuContainer}>
             <TouchableOpacity 
               style={styles.menuItem} 
-              onPress={handleLogout}
+              onPress={cerrarSesion}
             >
               <Text style={styles.menuItemText}>Cerrar Sesión</Text>
             </TouchableOpacity>
@@ -202,6 +391,7 @@ export default function ClientScreen({ navigation }) {
         </TouchableOpacity>
       </Modal>
 
+      {/* Contenido principal */}
       <ScrollView 
         ref={scrollViewRef}
         contentContainerStyle={styles.scrollContainer}
@@ -212,171 +402,250 @@ export default function ClientScreen({ navigation }) {
           style={styles.keyboardAvoidingView}
         >
           <View style={styles.formContainer}>
-            <Text style={styles.label}>Nombre de la planta:</Text>
+            {/* Selector de estado de la planta */}
+            <Text style={styles.label}>Estado de la planta:</Text>
             <View style={styles.pickerContainer}>
               <Picker
-                selectedValue={plantName}
-                onValueChange={(itemValue) => setPlantName(itemValue)}
+                selectedValue={estadoPlanta}
+                onValueChange={(value) => {
+                  setEstadoPlanta(value);
+                  setSelection({ x: 0, y: 0, width: 0, height: 0, visible: false });
+                  setShowConfirmButton(false);
+                  setResultado(null);
+                }}
                 style={styles.picker}
-                dropdownIconColor="#8B7765"
               >
-                <Picker.Item label="Seleccione una planta" value="" />
-                <Picker.Item label="Cedro limón" value="Cedro limón" />
-                <Picker.Item label="Ocote" value="Ocote" />
-                <Picker.Item label="Pino" value="Pino" />
+                <Picker.Item label="Seleccione estado" value="" />
+                <Picker.Item label="Sana" value="s" />
+                <Picker.Item label="Enferma" value="e" />
               </Picker>
             </View>
-            
+
+            {/* Selector de planta */}
+            <Text style={styles.label}>Tipo de planta:</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={nombrePlanta}
+                onValueChange={(value) => {
+                  setNombrePlanta(value);
+                  if (!imagenUri && value) {
+                    // Sugerir especie automáticamente
+                    setEspecie(
+                      value === "Cedro Limon" ? "Citrus medica" : 
+                      value === "Ocote" ? "Pinus oocarpa" : 
+                      value === "Pino" ? "Pinus spp" : ""
+                    );
+                  }
+                }}
+                style={styles.picker}
+              >
+                <Picker.Item label="Seleccione planta" value="" />
+                {tiposPlantas.map((planta) => (
+                  <Picker.Item label={planta} value={planta} key={planta} />
+                ))}
+              </Picker>
+            </View>
+
+            {/* Campo Especie */}
             <Text style={styles.label}>Especie:</Text>
             <TextInput 
               style={styles.input} 
-              placeholder="Ej. Solanum lycopersicum" 
-              value={species} 
-              onChangeText={setSpecies} 
+              placeholder="Ej. Pinus oocarpa" 
+              value={especie} 
+              onChangeText={setEspecie} 
               placeholderTextColor="#A7C4A0"
             />
             
+            {/* Campo Ubicación */}
             <Text style={styles.label}>Ubicación:</Text>
             <TextInput 
               style={styles.input} 
-              placeholder="Ej. Jardín trasero" 
-              value={location} 
-              onChangeText={setLocation} 
+              placeholder="Ej. Jardín trasero, zona 5" 
+              value={ubicacion} 
+              onChangeText={setUbicacion} 
               placeholderTextColor="#A7C4A0"
             />
             
+            {/* Botón para tomar foto */}
             <TouchableOpacity 
               style={styles.button} 
-              onPress={takePhoto}
-              disabled={isLoading}
+              onPress={tomarFoto}
+              disabled={cargando || !estadoPlanta || !nombrePlanta}
             >
-              {isLoading ? (
+              {cargando ? (
                 <ActivityIndicator color="white" />
               ) : (
                 <Text style={styles.buttonText}>Tomar Foto</Text>
               )}
             </TouchableOpacity>
-          </View>
 
-          <View style={styles.imageSection}>
-            <View style={styles.imageContainer}>
-              {imageUri ? (
-                <View style={styles.imageWrapper}>
-                  <Image 
-                    source={{ uri: imageUri }} 
-                    style={styles.image} 
-                    resizeMode="cover"
-                    onLoad={(e) => {
-                      const { width, height } = e.nativeEvent.source;
-                      setImageLayout({ width, height });
-                    }}
-                  />
-                  {selection.visible && (
-                    <View style={[
-                      styles.selectionBox,
-                      {
-                        left: selection.x,
-                        top: selection.y,
-                        width: selection.width,
-                        height: selection.height,
-                      }
-                    ]}>
-                      <Text style={styles.selectionText}>Zona afectada</Text>
-                    </View>
-                  )}
+            {/* Vista previa de imagen */}
+            {imagenUri && (
+              <View style={styles.imageContainer}>
+                <Image 
+                  source={{ uri: imagenUri }} 
+                  style={styles.image} 
+                  resizeMode="cover"
+                  onLoad={(e) => {
+                    const { width, height } = e.nativeEvent.source;
+                    setImageLayout({ width, height });
+                  }}
+                />
+                
+                {/* Recuadro de selección solo para plantas enfermas */}
+                {estadoPlanta === 'e' && selection.visible && (
+                  <View style={[
+                    styles.selectionBox,
+                    {
+                      left: selection.x,
+                      top: selection.y,
+                      width: selection.width,
+                      height: selection.height,
+                    }
+                  ]}>
+                    <Text style={styles.selectionText}>Área afectada</Text>
+                  </View>
+                )}
+                
+                {/* Área táctil para selección solo en plantas enfermas */}
+                {estadoPlanta === 'e' && (
                   <View 
                     style={styles.touchableImageArea}
                     onStartShouldSetResponder={() => true}
-                    onResponderGrant={(e) => {
-                      const { locationX, locationY } = e.nativeEvent;
-                      setSelection({
-                        x: locationX,
-                        y: locationY,
-                        width: 0,
-                        height: 0,
-                        visible: true
-                      });
-                      setShowConfirmButton(false);
-                    }}
-                    onResponderMove={(e) => {
-                      const { locationX, locationY } = e.nativeEvent;
-                      setSelection(prev => ({
-                        ...prev,
-                        width: Math.max(0, Math.min(locationX - prev.x, imageLayout.width - prev.x)),
-                        height: Math.max(0, Math.min(locationY - prev.y, imageLayout.height - prev.y))
-                      }));
-                    }}
-                    onResponderRelease={() => {
-                      if (selection.width > 10 && selection.height > 10) {
-                        setShowConfirmButton(true);
-                      } else {
-                        setSelection({ ...selection, visible: false });
-                      }
-                    }}
+                    onResponderGrant={handleImageTouch}
+                    onResponderMove={handleImageMove}
+                    onResponderRelease={handleImageRelease}
                   />
-                </View>
-              ) : (
-                <Text style={styles.imagePlaceholder}>Aquí aparecerá la imagen</Text>
-              )}
-            </View>
+                )}
+                
+                {/* Botón de confirmar selección */}
+                {showConfirmButton && (
+                  <TouchableOpacity 
+                    style={[styles.button, styles.confirmButton]}
+                    onPress={() => {
+                      setShowConfirmButton(false);
+                      // Aquí podrías mostrar un mensaje o directamente proceder al análisis
+                    }}
+                  >
+                    <Text style={styles.buttonText}>Confirmar selección</Text>
+                  </TouchableOpacity>
+                )}
+                
+                {/* Resultados del análisis */}
+                {resultado ? (
+                  <View style={styles.resultsContainer}>
+                    <Text style={styles.resultTitle}>
+                      {resultado.tipo === 'planta' ? 'Planta identificada:' : 'Enfermedad detectada:'}
+                    </Text>
+                    
+                    <View style={styles.resultItem}>
+                      <Text style={styles.resultLabel}>Nombre:</Text>
+                      <Text style={styles.resultValue}>
+                        {resultado.nombre} ({resultado.confianza}% de confianza)
+                      </Text>
+                    </View>
+                    
+                    {resultado.tipo === 'enfermedad' && resultado.area && (
+                      <View style={styles.resultItem}>
+                        <Text style={styles.resultLabel}>Área afectada:</Text>
+                        <Text style={styles.resultValue}>
+                          {resultado.area.width.toFixed(0)}x{resultado.area.height.toFixed(0)} px
+                        </Text>
+                      </View>
+                    )}
 
-            {showConfirmButton && (
-              <TouchableOpacity 
-                style={[styles.button, styles.confirmButton]}
-                onPress={() => {
-                  setShowConfirmButton(false);
-                  Alert.alert(
-                    'Área seleccionada', 
-                    `Coordenadas: X:${selection.x.toFixed(0)}, Y:${selection.y.toFixed(0)}\nTamaño: ${selection.width.toFixed(0)}x${selection.height.toFixed(0)}`
-                  );
-                }}
-              >
-                <Text style={styles.buttonText}>Confirmar selección</Text>
-              </TouchableOpacity>
+                    {/* Botones de acciones */}
+                    <View style={styles.buttonGroup}>
+                      <TouchableOpacity 
+                        style={[styles.button, styles.correctButton]}
+                        onPress={() => setMostrarModalCorreccion(true)}
+                      >
+                        <Text style={styles.buttonText}>Corregir</Text>
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity 
+                        style={[styles.button, styles.saveButton]}
+                        onPress={guardarDiagnostico}
+                        disabled={cargando}
+                      >
+                        {cargando ? (
+                          <ActivityIndicator color="white" />
+                        ) : (
+                          <Text style={styles.buttonText}>Guardar</Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ) : estadoPlanta === 'e' && selection.visible ? (
+                  <TouchableOpacity 
+                    style={[styles.button, styles.analyzeButton]}
+                    onPress={analizarEnfermedad}
+                    disabled={cargando}
+                  >
+                    <Text style={styles.buttonText}>
+                      {cargando ? 'Analizando...' : 'Analizar Enfermedad'}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
             )}
           </View>
-
-          <TouchableOpacity 
-            style={[styles.button, styles.detectButton]} 
-            onPress={detectDisease}
-            disabled={!imageUri || isLoading || !selection.visible}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.buttonText}>Detectar Enfermedad</Text>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.button, styles.saveButton]} 
-            onPress={savePlantData}
-            disabled={!plantName || !imageUri || isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.buttonText}>Guardar Planta</Text>
-            )}
-          </TouchableOpacity>
-
-          {disease && (
-            <View style={styles.diseaseInfo}>
-              <Text style={styles.diseaseTitle}>{disease.name}</Text>
-              <Text style={styles.diseaseText}>{disease.description}</Text>
-              {disease.affectedArea && (
-                <Text style={styles.diseaseText}>
-                  Área afectada: {disease.affectedArea.width.toFixed(0)}x{disease.affectedArea.height.toFixed(0)} px
-                </Text>
-              )}
-            </View>
-          )}
         </KeyboardAvoidingView>
       </ScrollView>
+
+      {/* Modal para corrección de clasificación */}
+      <Modal visible={mostrarModalCorreccion} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Seleccione la clase correcta</Text>
+            
+            <Picker
+              selectedValue={claseSeleccionada}
+              onValueChange={setClaseSeleccionada}
+              style={styles.modalPicker}
+            >
+              <Picker.Item label="Seleccione una clase" value="" />
+              {resultado?.tipo === 'planta' ? (
+                tiposPlantas.map((planta) => (
+                  <Picker.Item label={planta} value={planta} key={planta} />
+                ))
+              ) : (
+                <>
+                  <Picker.Item label="Roya" value="roya" />
+                  <Picker.Item label="Oídio" value="oidio" />
+                  <Picker.Item label="Mildiu" value="mildiu" />
+                </>
+              )}
+            </Picker>
+
+            <View style={styles.modalButtonGroup}>
+              <TouchableOpacity 
+                style={[styles.button, styles.cancelButton]}
+                onPress={() => setMostrarModalCorreccion(false)}
+              >
+                <Text style={styles.buttonText}>Cancelar</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.button, styles.confirmButton]}
+                onPress={enviarCorreccion}
+                disabled={!claseSeleccionada || cargando}
+              >
+                {cargando ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text style={styles.buttonText}>Confirmar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
+// Estilos
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -441,6 +710,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#8B7765',
     marginBottom: 8,
+    fontWeight: '500',
   },
   pickerContainer: {
     backgroundColor: '#FFFFFF',
@@ -465,61 +735,47 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
   },
-  multilineInput: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
   button: {
-    backgroundColor: '#228B22',
+    backgroundColor: '#006400',
     padding: 15,
     borderRadius: 5,
     alignItems: 'center',
-    marginTop: 10,
+    marginVertical: 10,
+    justifyContent: 'center',
+    minHeight: 50,
   },
-  detectButton: {
-    backgroundColor: '#006400',
-    width: '90%',
-    alignSelf: 'center',
-    marginTop: 20,
+  analyzeButton: {
+    backgroundColor: '#1E88E5',
+    marginTop: 15,
+  },
+  correctButton: {
+    backgroundColor: '#3498db',
+    flex: 1,
   },
   saveButton: {
     backgroundColor: '#2E7D32',
-    width: '90%',
-    alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 20,
+    flex: 1,
   },
   confirmButton: {
     backgroundColor: '#8B0000',
-    width: '90%',
-    alignSelf: 'center',
-    marginTop: 10,
+    position: 'absolute',
+    bottom: 20,
+    left: '10%',
+    right: '10%',
   },
   buttonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  imageSection: {
-    width: '90%',
-    alignSelf: 'center',
-  },
   imageContainer: {
-    width: '100%',
-    height: 250,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
     marginTop: 20,
     borderRadius: 5,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#ddd',
+    height: 300,
     position: 'relative',
-  },
-  imageWrapper: {
-    width: '100%',
-    height: '100%',
   },
   image: {
     width: '100%',
@@ -548,32 +804,69 @@ const styles = StyleSheet.create({
     padding: 2,
     fontSize: 12,
   },
-  imagePlaceholder: {
-    color: '#666',
-    fontSize: 16,
+  resultsContainer: {
+    backgroundColor: '#FFFFFF',
+    padding: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#ddd',
   },
-  diseaseInfo: {
-    width: '90%',
-    padding: 20,
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    marginTop: 20,
-    alignSelf: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  diseaseTitle: {
+  resultTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#228B22',
-    marginBottom: 8,
+    marginBottom: 15,
+    textAlign: 'center',
   },
-  diseaseText: {
+  resultItem: {
+    marginBottom: 10,
+  },
+  resultLabel: {
     fontSize: 16,
+    fontWeight: 'bold',
     color: '#555',
-    lineHeight: 22,
+  },
+  resultValue: {
+    fontSize: 16,
+    color: '#333',
+    marginTop: 3,
+  },
+  buttonGroup: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginTop: 15,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    width: '100%',
+    borderRadius: 10,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+    color: '#333',
+  },
+  modalPicker: {
+    width: '100%',
+    marginBottom: 30,
+  },
+  modalButtonGroup: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  cancelButton: {
+    backgroundColor: '#8B0000',
+    flex: 1,
   },
 });
