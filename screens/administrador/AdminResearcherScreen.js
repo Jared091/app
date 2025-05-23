@@ -19,7 +19,7 @@ import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../api/index.js';
 
-export default function PantallaInvestigadorAdmin({ navigation }) {
+export default function AdminResearcherScreen({ navigation }) {
   // Estados principales
   const [nombrePlanta, setNombrePlanta] = useState('');
   const [especie, setEspecie] = useState('');
@@ -471,6 +471,7 @@ export default function PantallaInvestigadorAdmin({ navigation }) {
               style={styles.button}
               onPress={tomarFoto}
               disabled={cargando || !estadoPlanta || !nombrePlanta}
+              testID="tomar-foto-button" // <-- Agregado para pruebas
             >
               {cargando ? (
                 <ActivityIndicator color="white" />

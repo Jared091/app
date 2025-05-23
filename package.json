@@ -45,7 +45,8 @@
   "jest": {
     "preset": "jest-expo",
     "collectCoverage": true,
-    "testEnvironment": "jsdom"
+    "testEnvironment": "jsdom",
+    "setupFiles": ["./jest.setup.js"]
   },
   "private": true
 }
