@@ -50,7 +50,7 @@ describe('AdminScreen', () => {
       first_name: 'John',
       last_name: 'Doe',
       email: 'john@example.com',
-      role: 'usuario',
+      role: 'admin',
     },
   ];
 
