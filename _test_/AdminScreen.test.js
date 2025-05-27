@@ -1,10 +1,6 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
-<<<<<<< HEAD
  import AdminScreen from '../screens/administrador/AdminScreen.js';
-=======
-import AdminScreen from '../screens/administrador/AdminScreen.js'; // ajusta esta ruta si es necesario
->>>>>>> 5c3b70799fb3d55b248d864c9bafc502e679577d
 import api from '../api/index.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
@@ -26,7 +22,6 @@ jest.mock('../api/index.js', () => ({
 }));
 jest.mock('@react-native-picker/picker', () => {
   const React = require('react');
-<<<<<<< HEAD
   const { View } = require('react-native');
   function Picker(props) {
     return <View {...props}>{props.children}</View>;
@@ -51,42 +46,6 @@ describe('AdminScreen', () => {
         },
       ],
     });
-=======
-  const { View, Text } = require('react-native');
-  return {
-    Picker: ({ selectedValue, onValueChange, children }) => (
-      <View>
-        <Text>Picker</Text>
-        {children}
-      </View>
-    ),
-    PickerItem: ({ label }) => <Text>{label}</Text>,
-  };
-});
-jest.mock('react-native/Libraries/Lists/FlatList', () => {
-  const React = require('react');
-  const { View } = require('react-native');
-  return ({ data = [], renderItem }) => (
-    <View>
-      {data.map((item, index) => renderItem({ item, index }))}
-    </View>
-  );
-});
-describe('AdminScreen', () => {
-  const mockUsers = [
-    {
-      id: 1,
-      username: 'jdoe',
-      first_name: 'John',
-      last_name: 'Doe',
-      email: 'john@example.com',
-      role: 'admin',
-    },
-  ];
-
-  beforeEach(() => {
-    api.get.mockResolvedValue({ data: mockUsers });
->>>>>>> 5c3b70799fb3d55b248d864c9bafc502e679577d
   });
 
   it('muestra usuarios después de cargar', async () => {
@@ -100,13 +59,7 @@ describe('AdminScreen', () => {
 
   it('abre el modal para editar rol', async () => {
     const { getByTestId, getByText, queryByText } = render(<AdminScreen />);
-<<<<<<< HEAD
     await waitFor(() => expect(queryByText('Cargando usuarios...')).toBeNull());
-=======
-    // Espera a que desaparezca el loading
-    await waitFor(() => expect(queryByText('Cargando usuarios...')).toBeNull());
-    // Ahora sí busca el usuario
->>>>>>> 5c3b70799fb3d55b248d864c9bafc502e679577d
     fireEvent.press(getByTestId('user-item-1'));
     await waitFor(() => {
       expect(getByText('Modificar Rol de jdoe')).toBeTruthy();
@@ -119,18 +72,11 @@ describe('AdminScreen', () => {
     await waitFor(() => expect(queryByText('Cargando usuarios...')).toBeNull());
     fireEvent.press(getByTestId('user-item-1'));
     await waitFor(() => getByText('Actualizar Rol'));
-<<<<<<< HEAD
     fireEvent(getByTestId('picker-rol'), 'valueChange', 'usuario');
     fireEvent.press(getByText('Actualizar Rol'));
     await waitFor(() => {
       expect(api.put).toHaveBeenCalledWith('/updateUser/1/', { role: 'usuario' });
       expect(api.get.mock.calls.length).toBeGreaterThanOrEqual(2);
-=======
-    fireEvent.press(getByText('Actualizar Rol'));
-    await waitFor(() => {
-      expect(api.put).toHaveBeenCalledWith('/updateUser/1/', { role: 'usuario' });
-      expect(api.get).toHaveBeenCalledTimes(2);
->>>>>>> 5c3b70799fb3d55b248d864c9bafc502e679577d
     });
   });
 
@@ -147,8 +93,4 @@ describe('AdminScreen', () => {
       ]);
     });
   });
-<<<<<<< HEAD
 });
-=======
-});
->>>>>>> 5c3b70799fb3d55b248d864c9bafc502e679577d
