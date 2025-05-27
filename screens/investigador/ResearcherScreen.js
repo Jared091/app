@@ -215,14 +215,12 @@ export default function ResearcherScreen({ navigation }) {
             <Text style={styles.label}>Nombre de la planta:</Text>
             <View style={styles.pickerContainer}>
               <Picker
+                testID="picker-plant"
                 selectedValue={plantName}
-                onValueChange={(itemValue) => setPlantName(itemValue)}
-                style={styles.picker}
-                dropdownIconColor="#8B7765"
+                onValueChange={(value) => setPlantName(value)}
+                 style={styles.picker}
               >
-                <Picker.Item label="Seleccione una planta" value="" />
-                <Picker.Item label="Cedro limón" value="Cedro limón" />
-                <Picker.Item label="Ocote" value="Ocote" />
+                <Picker.Item label="Seleccione planta" value="" />
                 <Picker.Item label="Pino" value="Pino" />
               </Picker>
             </View>
@@ -348,10 +346,11 @@ export default function ResearcherScreen({ navigation }) {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.button, styles.saveButton]} 
-            onPress={savePlantData}
-            disabled={!plantName || !imageUri || isLoading}
+          <TouchableOpacity
+            style={[styles.button, styles.saveButton]} // Mantén los estilos
+            accessibilityLabel="guardar-planta" // Para los tests
+            disabled={!plantName || !imageUri || isLoading} // Lógica de habilitación
+            onPress={savePlantData} // Acción al presionar
           >
             {isLoading ? (
               <ActivityIndicator color="white" />

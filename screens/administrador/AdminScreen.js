@@ -30,6 +30,10 @@ export default function AdminScreen() {
   };
 
   useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       fetchUsers();
     });
@@ -82,6 +86,7 @@ export default function AdminScreen() {
       style={styles.userItem} 
       onPress={() => handleEditUser(item)}
       activeOpacity={0.7}
+      testID={`user-item-${item.id}`}
     >
       <Text style={styles.userName}>{item.username}</Text>
       <Text style={styles.userType}>Nombre: {item.first_name} {item.last_name}</Text>
@@ -107,6 +112,7 @@ export default function AdminScreen() {
         <TouchableOpacity 
           onPress={() => setMenuVisible(!menuVisible)}
           hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+          testID="menu-toggle" // <-- Agrega esto
         >
           <MoreVertical size={24} color="white" />
         </TouchableOpacity>
@@ -145,6 +151,7 @@ export default function AdminScreen() {
                 handleLogout();
               }}
               style={styles.menuButton}
+              testID="logout-button" // <-- Agrega esto
             >
               <Text style={styles.menuItem}>Cerrar Sesión</Text>
             </TouchableOpacity>
@@ -184,6 +191,7 @@ export default function AdminScreen() {
               Modificar Rol de {selectedUser?.username}
             </Text>
             <Picker
+              testID="picker-rol"
               selectedValue={newRole}
               onValueChange={(itemValue) => setNewRole(itemValue)}
               style={styles.picker}

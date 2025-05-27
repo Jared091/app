@@ -552,10 +552,16 @@ export default function AdminResearcherScreen({ navigation }) {
                       </TouchableOpacity>
 
                       <TouchableOpacity
-                        testID="guardar-button" // Agregado para pruebas
+                        testID="guardar-button"
                         style={[styles.button, styles.saveButton]}
                         onPress={guardarDiagnostico}
-                        disabled={cargando}
+                        disabled={
+                          cargando ||
+                          !nombrePlanta ||
+                          !especie ||
+                          !ubicacion ||
+                          !imagenUri
+                        }
                       >
                         {cargando ? (
                           <ActivityIndicator color="white" />

@@ -167,6 +167,7 @@ const ClasificadorScreen = () => {
           <Text>Selecciona la clase correcta:</Text>
 
           <Picker
+            testID="picker-correccion"
             selectedValue={selectedClass}
             onValueChange={(itemValue) => setSelectedClass(itemValue)}
           >

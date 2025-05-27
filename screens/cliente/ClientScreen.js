@@ -19,7 +19,7 @@ import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../api/index.js';
 
-export default function PantallaInvestigadorAdmin({ navigation }) {
+export default function ClientScreen({ navigation }) {
   // Estados principales
   const [nombrePlanta, setNombrePlanta] = useState('');
   const [especie, setEspecie] = useState('');
@@ -406,6 +406,7 @@ export default function PantallaInvestigadorAdmin({ navigation }) {
             <Text style={styles.label}>Estado de la planta:</Text>
             <View style={styles.pickerContainer}>
               <Picker
+                testID="picker-estado"
                 selectedValue={estadoPlanta}
                 onValueChange={(value) => {
                   setEstadoPlanta(value);
@@ -425,11 +426,11 @@ export default function PantallaInvestigadorAdmin({ navigation }) {
             <Text style={styles.label}>Tipo de planta:</Text>
             <View style={styles.pickerContainer}>
               <Picker
+                testID="picker-plant"
                 selectedValue={nombrePlanta}
                 onValueChange={(value) => {
                   setNombrePlanta(value);
                   if (!imagenUri && value) {
-                    // Sugerir especie automáticamente
                     setEspecie(
                       value === "Cedro Limon" ? "Citrus medica" : 
                       value === "Ocote" ? "Pinus oocarpa" : 
@@ -567,6 +568,7 @@ export default function PantallaInvestigadorAdmin({ navigation }) {
                         style={[styles.button, styles.saveButton]}
                         onPress={guardarDiagnostico}
                         disabled={cargando}
+                        accessibilityLabel="guardar-diagnostico"
                       >
                         {cargando ? (
                           <ActivityIndicator color="white" />
