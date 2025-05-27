@@ -354,7 +354,7 @@ export default function AdminResearcherScreen({ navigation }) {
         <Text style={styles.headerText}>Detección de Plantas</Text>
         <TouchableOpacity
           accessible={true}
-          testID="menu-button"// Agregado para pruebas
+          testID="menu-button"
           onPress={() => setMenuVisible(true)}
         >
           <MoreVertical size={24} color="white" />
@@ -382,6 +382,44 @@ export default function AdminResearcherScreen({ navigation }) {
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      {/* Modal de corrección */}
+      <Modal
+        transparent={true}
+        visible={mostrarModalCorreccion}
+        animationType="fade"
+        onRequestClose={() => setMostrarModalCorreccion(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Selecciona la clase correcta</Text>
+            <Picker
+              selectedValue={claseSeleccionada}
+              onValueChange={setClaseSeleccionada}
+              style={styles.modalPicker}
+            >
+              <Picker.Item label="Seleccione clase" value="" />
+              {tiposPlantas.map((planta) => (
+                <Picker.Item label={planta} value={planta} key={planta} />
+              ))}
+            </Picker>
+            <View style={styles.modalButtonGroup}>
+              <TouchableOpacity
+                style={[styles.button, styles.cancelButton]}
+                onPress={() => setMostrarModalCorreccion(false)}
+              >
+                <Text style={styles.buttonText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.confirmButton]}
+                onPress={enviarCorreccion}
+              >
+                <Text style={styles.buttonText}>Enviar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
 
       {/* Contenido principal */}
@@ -520,37 +558,30 @@ export default function AdminResearcherScreen({ navigation }) {
                 )}
 
                 {/* Resultados del análisis */}
-                {resultado ? (
-                  <View style={styles.resultsContainer}>
-                    <Text style={styles.resultTitle}>
-                      {resultado.tipo === 'planta' ? 'Planta identificada:' : 'Enfermedad detectada:'}
-                    </Text>
-
-                    <View style={styles.resultItem}>
-                      <Text style={styles.resultLabel}>Nombre:</Text>
-                      <Text style={styles.resultValue}>
-                        {resultado.nombre} ({resultado.confianza}% de confianza)
+                <View>
+                  {resultado ? (
+                    <View style={styles.resultsContainer}>
+                      <Text style={styles.resultTitle}>
+                        {resultado.tipo === 'planta' ? 'Planta identificada:' : 'Enfermedad detectada:'}
                       </Text>
-                    </View>
 
-                    {resultado.tipo === 'enfermedad' && resultado.area && (
                       <View style={styles.resultItem}>
-                        <Text style={styles.resultLabel}>Área afectada:</Text>
+                        <Text style={styles.resultLabel}>Nombre:</Text>
                         <Text style={styles.resultValue}>
-                          {resultado.area.width.toFixed(0)}x{resultado.area.height.toFixed(0)} px
+                          {resultado.nombre} ({resultado.confianza}% de confianza)
                         </Text>
                       </View>
-                    )}
 
-                    {/* Botones de acciones */}
-                    <View style={styles.buttonGroup}>
-                      <TouchableOpacity
-                        style={[styles.button, styles.correctButton]}
-                        onPress={() => setMostrarModalCorreccion(true)}
-                      >
-                        <Text style={styles.buttonText}>Corregir</Text>
-                      </TouchableOpacity>
+                      {resultado.tipo === 'enfermedad' && resultado.area && (
+                        <View style={styles.resultItem}>
+                          <Text style={styles.resultLabel}>Área afectada:</Text>
+                          <Text style={styles.resultValue}>
+                            {resultado.area.width.toFixed(0)}x{resultado.area.height.toFixed(0)} px
+                          </Text>
+                        </View>
+                      )}
 
+<<<<<<< HEAD
                       <TouchableOpacity
                         testID="guardar-button"
                         style={[styles.button, styles.saveButton]}
@@ -569,77 +600,74 @@ export default function AdminResearcherScreen({ navigation }) {
                           <Text style={styles.buttonText}>Guardar</Text>
                         )}
                       </TouchableOpacity>
+=======
+                      {/* Botones de acciones */}
+                      <View style={styles.buttonGroup}>
+                        <TouchableOpacity
+                          style={[styles.button, styles.correctButton]}
+                          onPress={() => setMostrarModalCorreccion(true)}
+                        >
+                          <Text style={styles.buttonText}>Corregir</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          testID="guardar-button"
+                          style={[styles.button, styles.saveButton]}
+                          onPress={guardarDiagnostico}
+                          disabled={
+                            cargando ||
+                            !estadoPlanta ||
+                            !nombrePlanta ||
+                            !especie.trim() ||
+                            !ubicacion.trim()
+                          }
+                        >
+                          {cargando ? (
+                            <ActivityIndicator color="white" />
+                          ) : (
+                            <Text style={styles.buttonText}>Guardar</Text>
+                          )}
+                        </TouchableOpacity>
+                      </View>
+>>>>>>> 5c3b70799fb3d55b248d864c9bafc502e679577d
                     </View>
-                  </View>
-                ) : estadoPlanta === 'e' && selection.visible ? (
-                  <TouchableOpacity
-                    style={[styles.button, styles.analyzeButton]}
-                    onPress={analizarEnfermedad}
-                    disabled={cargando}
-                  >
-                    <Text style={styles.buttonText}>
-                      {cargando ? 'Analizando...' : 'Analizar Enfermedad'}
-                    </Text>
-                  </TouchableOpacity>
-                ) : null}
+                  ) : estadoPlanta === 'e' && selection.visible ? (
+                    <TouchableOpacity
+                      style={[styles.button, styles.analyzeButton]}
+                      onPress={analizarEnfermedad}
+                      disabled={cargando}
+                    >
+                      <Text style={styles.buttonText}>
+                        {cargando ? 'Analizando...' : 'Analizar Enfermedad'}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    // Mostrar el botón guardar aunque no haya resultado, pero esté la imagen cargada
+                    <TouchableOpacity
+                      testID="guardar-button"
+                      style={[styles.button, styles.saveButton]}
+                      onPress={guardarDiagnostico}
+                      disabled={
+                        cargando ||
+                        !estadoPlanta ||
+                        !nombrePlanta ||
+                        !especie.trim() ||
+                        !ubicacion.trim()
+                      }
+                    >
+                      {cargando ? (
+                        <ActivityIndicator color="white" />
+                      ) : (
+                        <Text style={styles.buttonText}>Guardar</Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             )}
           </View>
         </KeyboardAvoidingView>
       </ScrollView>
-
-      {/* Modal para corrección de clasificación */}
-      <Modal visible={mostrarModalCorreccion} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Seleccione la clase correcta</Text>
-
-            <Picker
-              selectedValue={claseSeleccionada}
-              onValueChange={setClaseSeleccionada}
-              style={styles.modalPicker}
-            >
-              <Picker.Item label="Seleccione una clase" value="" />
-              {resultado?.tipo === 'planta' ? (
-                tiposPlantas.map((planta) => (
-                  <Picker.Item label={planta} value={planta} key={planta} />
-                ))
-              ) : (
-                <>
-                  <Picker.Item label="Roya" value="roya" />
-                  <Picker.Item label="Oídio" value="oidio" />
-                  <Picker.Item label="Mildiu" value="mildiu" />
-                </>
-              )}
-            </Picker>
-
-            <View style={styles.modalButtonGroup}>
-              <TouchableOpacity
-                style={[styles.button, styles.cancelButton]}
-                onPress={() => setMostrarModalCorreccion(false)}
-              >
-                <Text style={styles.buttonText}>Cancelar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.button, styles.confirmButton]}
-                onPress={enviarCorreccion}
-                disabled={!claseSeleccionada || cargando}
-              >
-                {cargando ? (
-                  <ActivityIndicator color="white" />
-                ) : (
-                  <Text style={styles.buttonText}>Confirmar</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity onPress={enviarCorreccion}>
-              <Text>Enviar corrección</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }

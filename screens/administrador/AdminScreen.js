@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Button, Platform, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Modal,
+  Button,
+  Platform,
+  Alert,
+} from 'react-native';
 import { MoreVertical } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -30,10 +40,14 @@ export default function AdminScreen() {
   };
 
   useEffect(() => {
+<<<<<<< HEAD
     fetchUsers();
   }, []);
 
   useEffect(() => {
+=======
+    fetchUsers(); // <-- Esto asegura que siempre se cargan los usuarios al montar el componente
+>>>>>>> 5c3b70799fb3d55b248d864c9bafc502e679577d
     const unsubscribe = navigation.addListener('focus', () => {
       fetchUsers();
     });
@@ -82,30 +96,38 @@ export default function AdminScreen() {
   };
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.userItem} 
+    <TouchableOpacity
+      testID={`user-item-${item.id}`}
       onPress={() => handleEditUser(item)}
+<<<<<<< HEAD
       activeOpacity={0.7}
       testID={`user-item-${item.id}`}
+=======
+      style={styles.userItem}
+>>>>>>> 5c3b70799fb3d55b248d864c9bafc502e679577d
     >
       <Text style={styles.userName}>{item.username}</Text>
-      <Text style={styles.userType}>Nombre: {item.first_name} {item.last_name}</Text>
-      <Text style={styles.userType}>Correo: {item.email}</Text>
-      <Text style={[styles.userType, { color: getRoleColor(item.role) }]}>
+      <Text style={styles.userType} testID={`name-${item.id}`}>Nombre: {item.first_name} {item.last_name}</Text>
+      <Text style={styles.userType} testID={`email-${item.id}`}>Correo: {item.email}</Text>
+      <Text
+        style={[styles.userType, { color: getRoleColor(item.role) }]}
+        testID={`role-${item.id}`}
+      >
         Rol: {item.role}
       </Text>
     </TouchableOpacity>
   );
 
   const getRoleColor = (role) => {
-    switch(role) {
-      case 'admin': return '#FFD700'; // Dorado para admin
-      case 'staff': return '#1E90FF'; // Azul para staff
-      default: return '#BDBDBD'; // Gris para usuario
+    switch (role) {
+      case 'admin': return '#FFD700';
+      case 'staff': return '#1E90FF';
+      default: return '#BDBDBD';
     }
   };
 
   return (
+<<<<<<< HEAD
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerText}>Panel de Administrador</Text>
@@ -113,12 +135,21 @@ export default function AdminScreen() {
           onPress={() => setMenuVisible(!menuVisible)}
           hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
           testID="menu-toggle" // <-- Agrega esto
+=======
+    <View style={styles.container} testID="admin-screen">
+      <View style={styles.header} testID="admin-header">
+        <Text style={styles.headerText} testID="header-title">Panel de Administrador</Text>
+        <TouchableOpacity
+          testID="menu-toggle"
+          onPress={() => setMenuVisible(true)}
+>>>>>>> 5c3b70799fb3d55b248d864c9bafc502e679577d
         >
           <MoreVertical size={24} color="white" />
         </TouchableOpacity>
         {menuVisible && (
-          <View style={styles.menu}>
-            <TouchableOpacity 
+          <View style={styles.menu} testID="menu-dropdown">
+            <TouchableOpacity
+              testID="nav-admin-researcher"
               onPress={() => {
                 setMenuVisible(false);
                 navigation.navigate('AdminResearcher');
@@ -127,7 +158,8 @@ export default function AdminScreen() {
             >
               <Text style={styles.menuItem}>Modo Investigador</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
+              testID="nav-clasificador"
               onPress={() => {
                 setMenuVisible(false);
                 navigation.navigate('Clasificador');
@@ -136,7 +168,8 @@ export default function AdminScreen() {
             >
               <Text style={styles.menuItem}>Modo Clasificador</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
+              testID="nav-diseases"
               onPress={() => {
                 setMenuVisible(false);
                 navigation.navigate('Diseases');
@@ -145,6 +178,7 @@ export default function AdminScreen() {
             >
               <Text style={styles.menuItem}>Ver Enfermedades</Text>
             </TouchableOpacity>
+<<<<<<< HEAD
             <TouchableOpacity 
               onPress={() => {
                 setMenuVisible(false);
@@ -152,15 +186,20 @@ export default function AdminScreen() {
               }}
               style={styles.menuButton}
               testID="logout-button" // <-- Agrega esto
+=======
+            <TouchableOpacity
+              testID="logout-button"
+              onPress={handleLogout}
+>>>>>>> 5c3b70799fb3d55b248d864c9bafc502e679577d
             >
-              <Text style={styles.menuItem}>Cerrar Sesión</Text>
+              <Text>Cerrar Sesión</Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
 
       {loading ? (
-        <View style={styles.loadingContainer}>
+        <View style={styles.loadingContainer} testID="loading-container">
           <Text style={styles.loadingText}>Cargando usuarios...</Text>
         </View>
       ) : (
@@ -170,28 +209,34 @@ export default function AdminScreen() {
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.listContainer}
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
+            <View style={styles.emptyContainer} testID="empty-user-list">
               <Text style={styles.emptyText}>No hay usuarios registrados</Text>
             </View>
           }
           refreshing={loading}
           onRefresh={fetchUsers}
+          testID="user-list"
         />
       )}
 
-      <Modal 
-        visible={modalVisible} 
-        animationType="slide" 
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
         transparent
         onRequestClose={() => setModalVisible(false)}
+        testID="role-modal"
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
+            <Text style={styles.modalTitle} testID="modal-title">
               Modificar Rol de {selectedUser?.username}
             </Text>
             <Picker
+<<<<<<< HEAD
               testID="picker-rol"
+=======
+              testID="role-picker"
+>>>>>>> 5c3b70799fb3d55b248d864c9bafc502e679577d
               selectedValue={newRole}
               onValueChange={(itemValue) => setNewRole(itemValue)}
               style={styles.picker}
@@ -202,15 +247,17 @@ export default function AdminScreen() {
               <Picker.Item label="Usuario" value="usuario" />
             </Picker>
             <View style={styles.buttonContainer}>
-              <Button 
-                title="Actualizar Rol" 
-                onPress={handleChangeRole} 
-                color="#228B22" 
+              <Button
+                title="Actualizar Rol"
+                onPress={handleChangeRole}
+                color="#228B22"
+                testID="submit-role-change"
               />
-              <Button 
-                title="Cancelar" 
-                onPress={() => setModalVisible(false)} 
-                color="#8B0000" 
+              <Button
+                title="Cancelar"
+                onPress={() => setModalVisible(false)}
+                color="#8B0000"
+                testID="cancel-role-change"
               />
             </View>
           </View>
