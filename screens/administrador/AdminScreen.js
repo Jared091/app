@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Button, Platform, Alert } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Modal, Button, Alert, Platform } from 'react-native';
 import { MoreVertical } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../api/index.js';
 import { Picker } from '@react-native-picker/picker';
+import styles from '../../styles/styles'; // <--- Importa los estilos globales
 
 export default function AdminScreen() {
   const navigation = useNavigation();
@@ -148,10 +149,19 @@ export default function AdminScreen() {
             <TouchableOpacity 
               onPress={() => {
                 setMenuVisible(false);
+                navigation.navigate('Galeria'); // <--- Nueva opción
+              }}
+              style={styles.menuButton}
+            >
+              <Text style={styles.menuItem}>Galería de Imágenes</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={() => {
+                setMenuVisible(false);
                 handleLogout();
               }}
               style={styles.menuButton}
-              testID="logout-button" // <-- Agrega esto
+              testID="logout-button"
             >
               <Text style={styles.menuItem}>Cerrar Sesión</Text>
             </TouchableOpacity>
@@ -219,121 +229,3 @@ export default function AdminScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5DC',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#006400',
-    padding: 15,
-    paddingTop: Platform.OS === 'android' ? 40 : 15,
-    zIndex: 1,
-  },
-  headerText: {
-    color: 'white',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  menu: {
-    position: 'absolute',
-    top: 50,
-    right: 10,
-    backgroundColor: 'white',
-    borderRadius: 5,
-    padding: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    zIndex: 100,
-    minWidth: 180,
-  },
-  menuButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  menuItem: {
-    fontSize: 16,
-    color: '#004d00',
-  },
-  listContainer: {
-    flexGrow: 1,
-    padding: 20,
-  },
-  userItem: {
-    backgroundColor: '#2E7D32',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#66BB6A',
-  },
-  userName: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  userType: {
-    fontSize: 14,
-    marginBottom: 2,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 10,
-    width: '90%',
-    maxWidth: 400,
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#333',
-    textAlign: 'center',
-  },
-  picker: {
-    width: '100%',
-    marginVertical: 15,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 5,
-  },
-  buttonContainer: {
-    width: '100%',
-    marginTop: 10,
-    gap: 10,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#006400',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-  },
-});

@@ -2,17 +2,25 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const api = axios.create({
-  baseURL: "http://192.168.98.39:8000/api/",
+  baseURL: "http://10.131.232.167:8000/api/",
   timeout: 30000,
 });
 
-// Interceptor para agregar el token automáticamentew
+// Función para construir la URL de las imágenes
+export const getImageUrl = (imagePath) => {
+  // Verifica si la ruta ya incluye "/media/"
+  return imagePath.startsWith('/media/')
+    ? `http://10.131.232.167:8000${imagePath}` // Usa directamente la ruta completa
+    : `http://10.131.232.167:8000/media/${imagePath}`; // Agrega "/media/" si no está presente
+};
+
+// Interceptor para agregar el token automáticamente
 api.interceptors.request.use(async (config) => {
   try {
     const token = await AsyncStorage.getItem("access_token");
-    console.log("Token encontrado:", token); // Para depuración
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log("Token encontrado:", token); // Para depuración
     }
     return config;
   } catch (error) {
@@ -25,10 +33,10 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
   response => response,
   async error => {
-    if (error.response?.status === 401) {
+    const token = await AsyncStorage.getItem("access_token");
+    if (error.response?.status === 401 && token) {
       console.log("Error 401 - No autorizado");
       await AsyncStorage.multiRemove(['access_token', 'refresh_token']);
-      // Opcional: Redirigir a pantalla de login
     }
     return Promise.reject(error);
   }

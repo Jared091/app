@@ -10,6 +10,7 @@ import AdminResearcherScreen from '../screens/administrador/AdminResearcherScree
 import DiseasesScreen from '../screens/administrador/DiseasesScreen'; 
 import TreatmentScreen from '../screens/administrador/TreatmentScreen';
 import ClasificadorScreen from '../screens/administrador/ClasificadorScreen';
+import GaleriaScreen from '../screens/administrador/GaleriaScreen'; // <--- Agrega esto
 
 const Stack = createStackNavigator();
 
@@ -26,6 +27,7 @@ export default function Navigation() {
       <Stack.Screen name="Diseases" component={DiseasesScreen} />
       <Stack.Screen name="Treatment" component={TreatmentScreen} />
       <Stack.Screen name="Clasificador" component={ClasificadorScreen} />
+      <Stack.Screen name="Galeria" component={GaleriaScreen} />
     </Stack.Navigator>
   );
 }
