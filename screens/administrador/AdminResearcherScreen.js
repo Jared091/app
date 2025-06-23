@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,33 +11,34 @@ import {
   ScrollView,
   Modal,
   ActivityIndicator,
-} from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import { MoreVertical } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import api from '../../api/index.js';
-import { Feather } from '@expo/vector-icons';
-import styles from '../../styles/styles'; // Ajusta la ruta según la ubicación del archivo
-import axios from 'axios'; // Asegúrate de tener axios instalado
+} from "react-native";
+import { Picker } from "@react-native-picker/picker";
+import { MoreVertical } from "lucide-react-native";
+import * as ImagePicker from "expo-image-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from "expo-file-system";
+import api from "../../api/index.js";
+import { Feather } from "@expo/vector-icons";
+import styles from "../../styles/styles"; // Ajusta la ruta según la ubicación del archivo
+import axios from "axios"; // Asegúrate de tener axios instalado
 
 const estados = [
-  { id: 1, nombre: 'Sana' },
-  { id: 2, nombre: 'Enferma' }
+  { id: 1, nombre: "Sana" },
+  { id: 2, nombre: "Enferma" },
 ];
 
 export default function AdminResearcherScreen({ navigation }) {
   // Estados principales
-  const [nombrePlanta, setNombrePlanta] = useState('');
-  const [especie, setEspecie] = useState('');
-  const [ubicacion, setUbicacion] = useState('');
+  const [nombrePlanta, setNombrePlanta] = useState("");
+  const [especie, setEspecie] = useState("");
+  const [ubicacion, setUbicacion] = useState("");
   const [imagenUri, setImagenUri] = useState(null);
   const [resultado, setResultado] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
 
   // Estados para el flujo de diagnóstico
-  const [estadoPlanta, setEstadoPlanta] = useState(''); // 's' (sana) o 'e' (enferma)
+  const [estadoPlanta, setEstadoPlanta] = useState(""); // 's' (sana) o 'e' (enferma)
   const [mostrarModalCorreccion, setMostrarModalCorreccion] = useState(false);
   const [claseSeleccionada, setClaseSeleccionada] = useState("");
 
@@ -47,38 +48,41 @@ export default function AdminResearcherScreen({ navigation }) {
   const [estadoId, setEstadoId] = useState(null);
 
   // Datos fijos
-  const tiposPlantas = ["Cedro Limon", "Ocote", "Pino"];
+  const tiposPlantas = ["Pino", "Ocote"];
   const scrollViewRef = useRef();
 
   // Solicitar permisos de cámara
   useEffect(() => {
     (async () => {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permisos requeridos', 'Se necesita acceso a la cámara para continuar');
+      if (status !== "granted") {
+        Alert.alert(
+          "Permisos requeridos",
+          "Se necesita acceso a la cámara para continuar"
+        );
       }
     })();
   }, []);
 
   useEffect(() => {
-    AsyncStorage.getItem('user_id').then(id => setUserId(id));
+    AsyncStorage.getItem("user_id").then((id) => setUserId(id));
   }, []);
 
   const validarCampos = () => {
     if (!estadoPlanta) {
-      Alert.alert('Validación', 'Selecciona el estado de la planta.');
+      Alert.alert("Validación", "Selecciona el estado de la planta.");
       return false;
     }
     if (!nombrePlanta) {
-      Alert.alert('Validación', 'Selecciona el tipo de planta.');
+      Alert.alert("Validación", "Selecciona el tipo de planta.");
       return false;
     }
     if (!especie.trim()) {
-      Alert.alert('Validación', 'Ingresa la especie.');
+      Alert.alert("Validación", "Ingresa la especie.");
       return false;
     }
     if (!ubicacion.trim()) {
-      Alert.alert('Validación', 'Ingresa la ubicación.');
+      Alert.alert("Validación", "Ingresa la ubicación.");
       return false;
     }
     return true;
@@ -108,21 +112,33 @@ export default function AdminResearcherScreen({ navigation }) {
         });
 
         const respuesta = await api.post(
-          estadoPlanta === 's' ? "/classify-tree/" : "/classify-disease/",
+          estadoPlanta === "s" ? "/classify-tree/" : "/classify-disease/",
           formData,
           { headers: { "Content-Type": "multipart/form-data" } }
         );
-
-        if (respuesta.data?.predicted_class && respuesta.data.confidence !== undefined) {
-          const confianza = Math.round(respuesta.data.confidence * 100);
+        if (
+          respuesta.data?.predicted_class &&
+          respuesta.data.confidence !== undefined
+        ) {
+          const confianza = Math.round(respuesta.data.confidence);
           setResultado({
             nombre: respuesta.data.predicted_class,
-            confianza: confianza
+            confianza: confianza,
           });
+
+          // 🆕 Registrar la clasificación en el backend
+          await registrarClasificacion(
+            respuesta.data.predicted_class,
+            confianza,
+            imagen.uri
+          );
         }
       }
     } catch (error) {
-      Alert.alert('Error', error.message || 'No se pudo tomar o clasificar la foto');
+      Alert.alert(
+        "Error",
+        error.message || "No se pudo tomar o clasificar la foto"
+      );
     } finally {
       setCargando(false);
     }
@@ -151,21 +167,27 @@ export default function AdminResearcherScreen({ navigation }) {
         });
 
         const respuesta = await api.post(
-          estadoPlanta === 's' ? "/classify-tree/" : "/classify-disease/",
+          estadoPlanta === "s" ? "/classify-tree/" : "/classify-disease/",
           formData,
           { headers: { "Content-Type": "multipart/form-data" } }
         );
 
-        if (respuesta.data?.predicted_class && respuesta.data.confidence !== undefined) {
-          const confianza = Math.round(respuesta.data.confidence * 100);
+        if (
+          respuesta.data?.predicted_class &&
+          respuesta.data.confidence !== undefined
+        ) {
+          const confianza = Math.round(respuesta.data.confidence);
           setResultado({
             nombre: respuesta.data.predicted_class,
-            confianza: confianza
+            confianza: confianza,
           });
         }
       }
     } catch (error) {
-      Alert.alert('Error', error.message || 'No se pudo cargar o clasificar la imagen');
+      Alert.alert(
+        "Error",
+        error.message || "No se pudo cargar o clasificar la imagen"
+      );
     } finally {
       setCargando(false);
     }
@@ -174,38 +196,66 @@ export default function AdminResearcherScreen({ navigation }) {
   // Nueva función para guardar la planta
   const guardarPlanta = async () => {
     const formData = new FormData();
-    formData.append('nombre', nombrePlanta);
-    formData.append('especie', especie);
-    formData.append('ubicacion', ubicacion);
-    formData.append('usuario', Number(userId)); // ID del usuario
-    formData.append('estado', estadoPlanta === 's' ? 1 : 2); // ID del estado
-    formData.append('imagen', {
+    formData.append("Nombre", nombrePlanta);
+    formData.append("especie", especie);
+    formData.append("ubicacion", ubicacion);
+    formData.append("usuario", Number(userId)); // ID del usuario
+    formData.append("estado", estadoPlanta === "s" ? 1 : 2); // ID del estado
+    formData.append("confianza", resultado?.confianza ?? 0); // Confianza de la clasificación
+    formData.append("imagen", {
       uri: imagenUri, // URI de la imagen seleccionada
-      type: 'image/jpeg', // Tipo de archivo
+      type: "image/jpeg", // Tipo de archivo
       name: `planta_${Date.now()}.jpg`, // Nombre del archivo
     });
 
     try {
-      const response = await api.post('/plantas/', formData, {
+      const response = await api.post("/plantas/", formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       });
 
       if (response.status === 201 || response.status === 200) {
-        Alert.alert('Éxito', 'Planta guardada correctamente.');
-        navigation.navigate('Galeria'); // Redirige a la pantalla de galería
+        Alert.alert("Éxito", "Planta guardada correctamente.");
+        navigation.navigate("Galeria"); // Redirige a la pantalla de galería
       } else {
-        Alert.alert('Error', 'No se pudo guardar la planta.');
+        Alert.alert("Error", "No se pudo guardar la planta.");
       }
     } catch (error) {
       console.error(error.response?.data || error.message);
-      Alert.alert('Error', error.message || 'No se pudo guardar la planta.');
+      Alert.alert("Error", error.message || "No se pudo guardar la planta.");
+    }
+  };
+
+  // Nueva función para registrar clasificación en Django
+  const registrarClasificacion = async (predictedClass, confidence, uri) => {
+    try {
+      const formData = new FormData();
+      formData.append("usuario", Number(userId));
+      formData.append("clase_predicha", predictedClass);
+      formData.append("confianza", confidence);
+      formData.append("imagen", {
+        uri,
+        type: "image/jpeg",
+        name: `registro_${Date.now()}.jpg`,
+      });
+
+      await api.post("/clasificaciones/", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      console.log("Clasificación registrada en backend.");
+    } catch (error) {
+      console.error(
+        "Error al registrar clasificación:",
+        error?.response?.data || error.message
+      );
     }
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F5F5DC' }}>
+    <View style={{ flex: 1, backgroundColor: "#F5F5DC" }}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerText}>Detección de Plantas</Text>
@@ -221,7 +271,7 @@ export default function AdminResearcherScreen({ navigation }) {
             <TouchableOpacity
               onPress={() => {
                 setMenuVisible(false);
-                navigation.navigate('Admin');
+                navigation.navigate("Admin");
               }}
               style={styles.menuButton}
             >
@@ -230,7 +280,7 @@ export default function AdminResearcherScreen({ navigation }) {
             <TouchableOpacity
               onPress={() => {
                 setMenuVisible(false);
-                navigation.navigate('Galeria'); // <--- Nueva opción
+                navigation.navigate("Galeria"); // <--- Nueva opción
               }}
               style={styles.menuButton}
             >
@@ -280,7 +330,7 @@ export default function AdminResearcherScreen({ navigation }) {
               selectedValue={nombrePlanta}
               onValueChange={setNombrePlanta}
               style={styles.picker}
-              enabled={!!estadoPlanta} 
+              enabled={!!estadoPlanta}
             >
               <Picker.Item label="Selecciona tipo" value="" />
               {tiposPlantas.map((tipo) => (
@@ -295,7 +345,7 @@ export default function AdminResearcherScreen({ navigation }) {
             placeholder="Ej. Pinus oocarpa"
             value={especie}
             onChangeText={setEspecie}
-            editable={!!nombrePlanta} 
+            editable={!!nombrePlanta}
           />
 
           <Text style={styles.label}>Ubicación:</Text>
@@ -311,7 +361,12 @@ export default function AdminResearcherScreen({ navigation }) {
             <TouchableOpacity
               style={[
                 styles.cameraButton,
-                (cargando || !estadoPlanta || !nombrePlanta || !especie.trim() || !ubicacion.trim()) && styles.cameraButtonDisabled
+                (cargando ||
+                  !estadoPlanta ||
+                  !nombrePlanta ||
+                  !especie.trim() ||
+                  !ubicacion.trim()) &&
+                  styles.cameraButtonDisabled,
               ]}
               onPress={tomarFoto}
               disabled={
@@ -331,7 +386,12 @@ export default function AdminResearcherScreen({ navigation }) {
             <TouchableOpacity
               style={[
                 styles.cameraButton,
-                (cargando || !estadoPlanta || !nombrePlanta || !especie.trim() || !ubicacion.trim()) && styles.cameraButtonDisabled
+                (cargando ||
+                  !estadoPlanta ||
+                  !nombrePlanta ||
+                  !especie.trim() ||
+                  !ubicacion.trim()) &&
+                  styles.cameraButtonDisabled,
               ]}
               onPress={cargarGaleria}
               disabled={
@@ -353,8 +413,15 @@ export default function AdminResearcherScreen({ navigation }) {
           <TouchableOpacity
             style={[
               styles.cameraButton,
-              (!imagenUri || guardando || cargando || !estadoPlanta || !nombrePlanta || !especie.trim() || !ubicacion.trim()) && styles.cameraButtonDisabled,
-              { marginTop: 20, backgroundColor: '#27ae60' }
+              (!imagenUri ||
+                guardando ||
+                cargando ||
+                !estadoPlanta ||
+                !nombrePlanta ||
+                !especie.trim() ||
+                !ubicacion.trim()) &&
+                styles.cameraButtonDisabled,
+              { marginTop: 20, backgroundColor: "#27ae60" },
             ]}
             onPress={guardarPlanta}
             disabled={
@@ -374,7 +441,11 @@ export default function AdminResearcherScreen({ navigation }) {
           </TouchableOpacity>
 
           {cargando && (
-            <ActivityIndicator size="large" color="#3498db" style={{ marginVertical: 20 }} />
+            <ActivityIndicator
+              size="large"
+              color="#3498db"
+              style={{ marginVertical: 20 }}
+            />
           )}
 
           {imagenUri && !cargando && (
@@ -386,25 +457,49 @@ export default function AdminResearcherScreen({ navigation }) {
               />
               {resultado && (
                 <View style={styles.resultadoBox}>
-                  <Feather name="check-circle" size={32} color="#2ecc71" style={{ marginBottom: 8 }} />
+                  <Feather
+                    name="check-circle"
+                    size={32}
+                    color="#2ecc71"
+                    style={{ marginBottom: 8 }}
+                  />
                   <Text style={styles.resultadoTitulo}>
                     ¡Clasificación exitosa!
                   </Text>
                   <Text style={styles.resultadoTexto}>
-                    {estadoPlanta === 's'
-                      ? <>Planta clasificada como: <Text style={{ fontWeight: 'bold', color: '#006400' }}>{resultado.nombre}</Text></>
-                      : <>Enfermedad detectada: <Text style={{ fontWeight: 'bold', color: '#8B0000' }}>{resultado.nombre}</Text></>
-                    }
+                    {estadoPlanta === "s" ? (
+                      <>
+                        Planta clasificada como:{" "}
+                        <Text style={{ fontWeight: "bold", color: "#006400" }}>
+                          {resultado.nombre}
+                        </Text>
+                      </>
+                    ) : (
+                      <>
+                        Enfermedad detectada:{" "}
+                        <Text style={{ fontWeight: "bold", color: "#8B0000" }}>
+                          {resultado.nombre}
+                        </Text>
+                      </>
+                    )}
                   </Text>
                   <Text style={styles.resultadoTexto}>
-                    Confianza: <Text style={{ fontWeight: 'bold', color: '#1E88E5' }}>{resultado.confianza}%</Text>
+                    Confianza:{" "}
+                    <Text style={{ fontWeight: "bold", color: "#1E88E5" }}>
+                      {resultado.confianza}%
+                    </Text>
                   </Text>
                   <TouchableOpacity
-                    style={[styles.cameraButton, { backgroundColor: '#e74c3c', marginTop: 10 }]}
+                    style={[
+                      styles.cameraButton,
+                      { backgroundColor: "#e74c3c", marginTop: 10 },
+                    ]}
                     onPress={() => setMostrarModalCorreccion(true)}
                   >
                     <Feather name="edit-2" size={22} color="#fff" />
-                    <Text style={styles.cameraButtonText}>Corregir clasificación</Text>
+                    <Text style={styles.cameraButtonText}>
+                      Corregir clasificación
+                    </Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -417,7 +512,8 @@ export default function AdminResearcherScreen({ navigation }) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>
-              Selecciona la {estadoPlanta === 's' ? 'clase correcta' : 'enfermedad correcta'}:
+              Selecciona la{" "}
+              {estadoPlanta === "s" ? "clase correcta" : "enfermedad correcta"}:
             </Text>
             <Picker
               selectedValue={claseSeleccionada}
@@ -448,7 +544,7 @@ export default function AdminResearcherScreen({ navigation }) {
                     formData.append("true_class", claseSeleccionada);
 
                     await api.post(
-                      estadoPlanta === 's' ? "/train/" : "/train-disease/",
+                      estadoPlanta === "s" ? "/train/" : "/train-disease/",
                       formData,
                       { headers: { "Content-Type": "multipart/form-data" } }
                     );

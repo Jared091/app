@@ -35,7 +35,7 @@ export default function GaleriaScreen({ navigation }) {
 
   const handleEditarNombre = (imagen) => {
     setSelectedImagen(imagen);
-    setNuevoNombre(imagen.nombre);
+    setNuevoNombre(imagen.Nombre);
     setModalVisible(true);
   };
 
@@ -101,7 +101,10 @@ export default function GaleriaScreen({ navigation }) {
           resizeMode="cover"
         />
         <Text style={[styles.userName, { color: '#006400', marginBottom: 6, textAlign: 'center' }]}>
-          {item.nombre}
+          {item.Nombre}
+        </Text>
+        <Text style={{ color: '#2c3e50', marginBottom: 6, fontSize: 13 }}>
+          Precisión: {item.confianza}%
         </Text>
         <TouchableOpacity
           style={[styles.cameraButton, { backgroundColor: '#3498db', alignSelf: 'center', minWidth: 100, paddingVertical: 8, paddingHorizontal: 10 }]}
@@ -150,7 +153,7 @@ export default function GaleriaScreen({ navigation }) {
 
       <FlatList
         data={imagenes}
-        keyExtractor={item => item.id.toString()}
+        keyExtractor={item => item.Id_Planta.toString()}
         renderItem={renderItem}
         numColumns={2}
         contentContainerStyle={{ padding: 10, paddingBottom: 30 }}

@@ -2,7 +2,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const api = axios.create({
-  baseURL: "http://10.131.232.167:8000/api/",
+  baseURL: "http://192.168.100.13:8000/api/",
   timeout: 30000,
 });
 
@@ -10,8 +10,8 @@ const api = axios.create({
 export const getImageUrl = (imagePath) => {
   // Verifica si la ruta ya incluye "/media/"
   return imagePath.startsWith('/media/')
-    ? `http://10.131.232.167:8000${imagePath}` // Usa directamente la ruta completa
-    : `http://10.131.232.167:8000/media/${imagePath}`; // Agrega "/media/" si no está presente
+    ? `http://192.168.100.13:8000${imagePath}` // Usa directamente la ruta completa
+    : `http://192.168.100.13:8000/media/${imagePath}`; // Agrega "/media/" si no está presente
 };
 
 // Interceptor para agregar el token automáticamente
