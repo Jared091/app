@@ -131,24 +131,6 @@ export default function AdminScreen() {
             <TouchableOpacity 
               onPress={() => {
                 setMenuVisible(false);
-                navigation.navigate('Clasificador');
-              }}
-              style={styles.menuButton}
-            >
-              <Text style={styles.menuItem}>Modo Clasificador</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={() => {
-                setMenuVisible(false);
-                navigation.navigate('Diseases');
-              }}
-              style={styles.menuButton}
-            >
-              <Text style={styles.menuItem}>Ver Enfermedades</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={() => {
-                setMenuVisible(false);
                 navigation.navigate('Galeria'); // <--- Nueva opción
               }}
               style={styles.menuButton}
