@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, Modal, TextInput, Alert, Dimensions } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Image, Modal, Alert, Dimensions } from 'react-native';
 import { MoreVertical } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getImageUrl } from '../../api/index';
 import api from '../../api/index.js';
 import styles from '../../styles/styles';
+import { Picker } from '@react-native-picker/picker';
 
 const { width } = Dimensions.get('window');
 const ITEM_SIZE = (width - 60) / 2; // 2 columnas, con margen
@@ -34,18 +35,18 @@ export default function GaleriaScreen({ navigation }) {
   }, []);
 
   const handleEditarNombre = (imagen) => {
-    setSelectedImagen(imagen);
-    setNuevoNombre(imagen.Nombre);
+    setSelectedImagen(imagen); // imagen debe tener el campo id correcto
+    setNuevoNombre(imagen.Nombre); // o el campo correcto
     setModalVisible(true);
   };
 
   const handleGuardarNombre = async () => {
     if (!nuevoNombre.trim()) {
-      Alert.alert('Error', 'El nombre no puede estar vacío');
+      Alert.alert('Error', 'Debes seleccionar un tipo de planta');
       return;
     }
     try {
-      await api.put(`/imagenes/${selectedImagen.id}/`, { nombre: nuevoNombre });
+      await api.put(`/imagenes/${selectedImagen.Id_Planta}/`, { Nombre: nuevoNombre });
       Alert.alert('Éxito', 'Nombre actualizado');
       setModalVisible(false);
       fetchImagenes();
@@ -174,14 +175,32 @@ export default function GaleriaScreen({ navigation }) {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Editar nombre de la imagen</Text>
-            <TextInput
-              style={styles.input}
-              value={nuevoNombre}
-              onChangeText={setNuevoNombre}
-              placeholder="Nuevo nombre"
-            />
+          <View style={[styles.modalContent, { minHeight: 220, justifyContent: 'flex-start' }]}>
+            <Text style={styles.modalTitle}>Editar nombre de la planta</Text>
+            {/* Picker en vez de TextInput */}
+            <View style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 8, marginVertical: 18, backgroundColor: '#fff', overflow: 'hidden' }}>
+              <Picker
+                selectedValue={nuevoNombre}
+                onValueChange={setNuevoNombre}
+                style={{ width: 220, height: 50, color: '#333', fontSize: 13 }} // más pequeño
+                dropdownIconColor="#27ae60"
+                mode="dropdown"
+              >
+                <Picker.Item label="Selecciona tipo" value="" />
+                {[
+                  "Arbusto",
+                  "Capulin",
+                  "Malvon",
+                  "Ocote",
+                  "Pasto",
+                  "Pera",
+                  "Pino",
+                  "Trebol",
+                ].map((tipo) => (
+                  <Picker.Item key={tipo} label={tipo} value={tipo} />
+                ))}
+              </Picker>
+            </View>
             <View style={styles.modalButtonGroup}>
               <TouchableOpacity
                 style={[styles.cancelButton, styles.cameraButton]}

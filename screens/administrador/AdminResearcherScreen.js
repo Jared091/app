@@ -38,6 +38,10 @@ export default function AdminResearcherScreen({ navigation }) {
   const [guardando, setGuardando] = useState(false);
   const [userId, setUserId] = useState(null);
 
+  // Estados para tooltips
+  const [showTooltipCamera, setShowTooltipCamera] = useState(false);
+  const [showTooltipGallery, setShowTooltipGallery] = useState(false);
+
   // Datos fijos
   const tiposPlantas = [
     "Arbusto",
@@ -95,8 +99,9 @@ export default function AdminResearcherScreen({ navigation }) {
       const resultado = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        aspect: [4, 3],
+        aspect: [1, 1], // cuadrada
         quality: 0.8,
+        base64: false,
       });
 
       if (!resultado.canceled && resultado.assets?.[0]) {
@@ -358,60 +363,58 @@ export default function AdminResearcherScreen({ navigation }) {
           />
 
           <View style={styles.botonesContainer}>
-            <TouchableOpacity
-              style={[
-                styles.cameraButton,
-                (cargando ||
+            <View style={{ alignItems: "center" }}>
+              <TouchableOpacity
+                style={styles.iconButtonGreen}
+                onPress={tomarFoto}
+                onPressIn={() => setShowTooltipCamera(true)}
+                onPressOut={() => setShowTooltipCamera(false)}
+                disabled={
+                  cargando ||
                   !estadoPlanta ||
                   !nombrePlanta ||
                   !especie.trim() ||
-                  !ubicacion.trim()) &&
-                  styles.cameraButtonDisabled,
-              ]}
-              onPress={tomarFoto}
-              disabled={
-                cargando ||
-                !estadoPlanta ||
-                !nombrePlanta ||
-                !especie.trim() ||
-                !ubicacion.trim()
-              }
-            >
-              <Feather name="camera" size={22} color="#fff" style={{ marginRight: 10 }} />
-              <Text style={styles.cameraButtonText}>
-                {cargando ? "Procesando..." : "Tomar Foto"}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.cameraButton,
-                (cargando ||
+                  !ubicacion.trim()
+                }
+              >
+                <Feather name="camera" size={26} color="#fff" />
+              </TouchableOpacity>
+              {showTooltipCamera && (
+                <View style={styles.tooltipBox}>
+                  <Text style={styles.tooltipText}>Tomar foto con la cámara</Text>
+                </View>
+              )}
+            </View>
+            <View style={{ alignItems: "center" }}>
+              <TouchableOpacity
+                style={styles.iconButtonGreen}
+                onPress={cargarGaleria}
+                onPressIn={() => setShowTooltipGallery(true)}
+                onPressOut={() => setShowTooltipGallery(false)}
+                disabled={
+                  cargando ||
                   !estadoPlanta ||
                   !nombrePlanta ||
                   !especie.trim() ||
-                  !ubicacion.trim()) &&
-                  styles.cameraButtonDisabled,
-              ]}
-              onPress={cargarGaleria}
-              disabled={
-                cargando ||
-                !estadoPlanta ||
-                !nombrePlanta ||
-                !especie.trim() ||
-                !ubicacion.trim()
-              }
-            >
-              <Feather name="image" size={22} color="#fff" style={{ marginRight: 10 }} />
-              <Text style={styles.cameraButtonText}>
-                {cargando ? "Procesando..." : "Galería"}
-              </Text>
-            </TouchableOpacity>
+                  !ubicacion.trim()
+                }
+              >
+                <Feather name="image" size={26} color="#fff" />
+              </TouchableOpacity>
+              {showTooltipGallery && (
+                <View style={styles.tooltipBox}>
+                  <Text style={styles.tooltipText}>
+                    Seleccionar imagen de la galería
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
 
           <TouchableOpacity
             style={[
               styles.cameraButton,
+              styles.saveButton,
               (!imagenUri ||
                 guardando ||
                 cargando ||
@@ -420,7 +423,6 @@ export default function AdminResearcherScreen({ navigation }) {
                 !especie.trim() ||
                 !ubicacion.trim()) &&
                 styles.cameraButtonDisabled,
-              { marginTop: 20, backgroundColor: "#27ae60" },
             ]}
             onPress={guardarPlanta}
             disabled={
@@ -449,8 +451,8 @@ export default function AdminResearcherScreen({ navigation }) {
             <View style={styles.resultadoContainer}>
               <Image
                 source={{ uri: imagenUri }}
-                style={styles.resultadoImagen}
-                resizeMode="contain"
+                style={{ width: 224, height: 224, borderRadius: 10, marginBottom: 15, borderWidth: 2, borderColor: '#2ecc71', alignSelf: 'center' }}
+                resizeMode="cover"
               />
               {resultado && (
                 <View style={styles.resultadoBox}>

@@ -8,10 +8,14 @@ const api = axios.create({
 
 // Función para construir la URL de las imágenes
 export const getImageUrl = (imagePath) => {
-  // Verifica si la ruta ya incluye "/media/"
-  return imagePath.startsWith('/media/')
-    ? `http://10.131.232.167:8000${imagePath}` // Usa directamente la ruta completa
-    : `http://10.131.232.167:8000/media/${imagePath}`; // Agrega "/media/" si no está presente
+  if (!imagePath) return '';
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  if (imagePath.startsWith('/media/')) {
+    return `http://10.131.232.167:8000${imagePath}`;
+  }
+  return `http://10.131.232.167:8000/media/${imagePath}`;
 };
 
 // Interceptor para agregar el token automáticamente
